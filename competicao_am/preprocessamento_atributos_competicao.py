@@ -15,12 +15,17 @@ class DataframePreprocessing:
         self.dic_int_to_nom_classe = {}
         self.dic_nom_classe_to_int = {}
 
+        # X and Y
+        self._x = None
+        self._y = None
+
         # Processing
         self._process()
 
     @staticmethod
     def remove_id(*args: Tuple[pd.DataFrame]):
-        dfs = (df.drop(columns='id') for df in args)
+        dfs = tuple(df.drop(columns='id')
+                    if 'id' in df.columns else df for df in args)
         return dfs[0] if len(dfs) == 1 else dfs
 
     def _process(self):
@@ -28,8 +33,6 @@ class DataframePreprocessing:
         Aplica operações globais ao dataframe
         """
         pass
-        # self._df_treino = self._df_treino.drop(columns=['id'])
-        # self._df_data_to_predict = self._df_treino.drop(columns=['id'])
 
     def class_to_number(self, y):
         """
@@ -58,10 +61,13 @@ class DataframePreprocessing:
 
     @property
     def col_classe(self) -> str:
-        return self._col_clase
+        return self._col_classe
 
     @property
     def x(self):
+        if self._x is not None:
+            return self._x
+
         x_treino = self.df_treino.drop(self.col_classe, axis=1)
         x_to_predict = self.df_data_to_predict
 
@@ -69,10 +75,14 @@ class DataframePreprocessing:
             x_to_predict = self.df_data_to_predict.drop(
                 self.col_classe, axis=1)
 
+        self._x = x_treino, x_to_predict
         return x_treino, x_to_predict
 
     @property
     def y(self):
+        if self._y is not None:
+            return self._y
+
         y_treino = self.class_to_number(self.df_treino[self.col_classe])
         y_to_predict = None
 
@@ -80,6 +90,7 @@ class DataframePreprocessing:
             y_to_predict = self.class_to_number(
                 self.df_data_to_predict[self.col_classe])
 
+        self._y = y_treino, y_to_predict
         return y_treino, y_to_predict
 
     def nom_classe(self, classe: int) -> str:
@@ -107,9 +118,14 @@ class DataframePreprocessing:
         """
         Cria uma bag of words a partir da coluna passada
         """
+
+        # Concatenating the bag with the initial dataframe might give better results
+
+        x_treino, x_to_predict = self.x
+
         bow = BagOfWords()
 
-        training_bow_df = bow.cria_bow(self.df_treino, column)
-        predict_bow_df = bow.aplica_bow(self.df_data_to_predict, column)
+        training_bow_df = bow.cria_bow(x_treino, column)
+        predict_bow_df = bow.aplica_bow(x_to_predict, column)
 
-        return training_boi_df, predict_boi_df
+        return training_bow_df, predict_bow_df

@@ -5,28 +5,35 @@ import pandas as pd
 
 def gerar_saida_teste(df_data_to_predict, col_classe, num_grupo):
     """
-    Assim como os demais códigos da pasta "competicao_am", esta função 
-    só poderá ser modificada na fase de geração da solução. 
+    Treina o modelo com os dados de treino fornecidos e computa a saída de teste por meio do modelo criado 
     """
 
+    # Método usado
     scikit_method = LinearSVC(C=7, random_state=2)
-    ml_method = MetodoCompeticao(scikit_method)
 
-    # o treino será sempre o dataset completo - sem nenhum dado a mais e sem nenhum preprocessamento
-    # esta função que deve encarregar de fazer o preprocessamento
+    # DataFrame de treino
     df_treino = pd.read_csv("datasets/movies_amostra.csv")
 
-    # gera as representações e seu resultado
-    y_to_predict, arr_predictions_ator = ml_method.eval_actors(
-        df_treino, df_data_to_predict, col_classe)
-    y_to_predict, arr_predictions_bow = ml_method.eval_bow(
-        df_treino, df_data_to_predict, col_classe)
+    # Instanciação do método
+    ml_method = MetodoCompeticao(
+        scikit_method, df_treino=df_treino, df_data_to_predict=df_data_to_predict, col_classe=col_classe)
 
-    # combina as duas
-    arr_final_predictions = ml_method.combine_predictions(
-        arr_predictions_ator, arr_predictions_bow)
+    # Treinamento e geração dos resultados
+    resultado = ml_method.eval()
+    arr_final_predictions = resultado.predict_y
 
-    # grava o resultado obtido
     with open(f"predict_grupo_{num_grupo}.txt", "w") as file_predict:
         for predict in arr_final_predictions:
-            file_predict.write(ml_method.dic_int_to_nom_classe[predict]+"\n")
+            file_predict.write(ml_method.preprocessor.nom_classe(predict)+"\n")
+
+
+def resultado_teste(df_data_to_predict, col_classe):
+    scikit_method = LinearSVC(C=7, random_state=2)
+
+    df_treino = pd.read_csv("datasets/movies_amostra.csv")
+
+    ml_method = MetodoCompeticao(
+        scikit_method, df_treino=df_treino, df_data_to_predict=df_data_to_predict, col_classe=col_classe)
+
+    resultado = ml_method.eval()
+    return resultado

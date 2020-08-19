@@ -2,27 +2,26 @@ from base_am.metodo import MetodoAprendizadoDeMaquina
 import pandas as pd
 from .preprocessamento_atributos_competicao import DataframePreprocessing
 from base_am.resultado import Resultado
-from typing import Union, List
+from typing import Union, List, Tuple
 from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.metrics import classification_report
 from sklearn.svm import LinearSVC
 
+from IPython.display import display
+
+# TODO:
+# [] Implement multi ml_method support;
+# [] Verify unused properties;
+
 
 class MetodoCompeticao(MetodoAprendizadoDeMaquina):
-    def __init__(self, ml_method: Union[ClassifierMixin, RegressorMixin], df_treino: pd.DataFrame, df_data_to_predict: pd.DataFrame, col_classe: str):
+    def __init__(self, ml_method: Union[ClassifierMixin, RegressorMixin], preprocessor: DataframePreprocessing = None, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None):
         self.ml_method = ml_method
-
-        self.preprocessor = DataframePreprocessing(
-            df_treino, df_data_to_predict, col_classe)
-
-    def __init__(self, ml_method: Union[ClassifierMixin, RegressorMixin], preprocessor: DataframePreprocessing):
-        self.ml_method = ml_method
-
         self.preprocessor = preprocessor
 
-    def __init__(self, ml_method: Union[ClassifierMixin, RegressorMixin]):
-        self.ml_method = ml_method
-        self.preprocessor = None
+        if df_treino is not None and df_data_to_predict is not None and col_classe is not None and preprocessor is None:
+            self.preprocessor = DataframePreprocessing(
+                df_treino, df_data_to_predict, col_classe)
 
     # Properties
 
@@ -58,7 +57,7 @@ class MetodoCompeticao(MetodoAprendizadoDeMaquina):
         if len(predictions) < 1:
             raise ValueError("Predictins can't be empty")
 
-        for i in len(predictions[0]):
+        for i in range(len(predictions[0])):
             comedy = 0
             action = 0
 
@@ -71,7 +70,7 @@ class MetodoCompeticao(MetodoAprendizadoDeMaquina):
             if comedy > action:
                 y_final_predictions.append(
                     self.preprocessor.int_classe('Comedy'))
-            else if comedy == action:
+            elif comedy == action:
                 y_final_predictions.append(predictions[0][i])
             else:
                 y_final_predictions.append(
@@ -100,8 +99,9 @@ class MetodoCompeticao(MetodoAprendizadoDeMaquina):
 
         df_treino_bow, df_to_predict_bow = self.preprocessor.bag_of_words(
             column)
-        df_treino_bow, df_to_predict_bow = DataframePreprocessing.remove_id(
-            df_treino_boi, df_to_predict_boi)
+
+        # df_treino_bow, df_to_predict_bow = DataframePreprocessing.remove_id(
+        #     df_treino_bow, df_to_predict_bow)
 
         # ? Should the seed go here?
         self.ml_method.fit(df_treino_bow, y_treino)
@@ -109,7 +109,10 @@ class MetodoCompeticao(MetodoAprendizadoDeMaquina):
 
         return y_to_predict, arr_predict
 
-    def eval(self, seed: int = 1) -> Resultado:
+    def eval(self, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None, seed: int = 1) -> Resultado:
+        if df_treino is not None and df_data_to_predict is not None and col_classe is not None:
+            self.preprocessor = DataframePreprocessing(
+                df_treino, df_data_to_predict, col_classe)
 
         y_to_predict, predictions_ator = self._eval_boi(
             ["ator_1", "ator_2", "ator_3", "ator_4", "ator_5"])
@@ -121,10 +124,4 @@ class MetodoCompeticao(MetodoAprendizadoDeMaquina):
         final_predictions = self.combine_predictions(
             predictions_resumo, predictions_titulo, predictions_escritor, predictions_ator)  # Ordem indica prioridade
 
-        return Resultado(y_to_predict, arr_final_predictions)
-
-    def eval(self, df_treino: pd.DataFrame, df_data_to_predict: pd.DataFrame, col_classe: str, seed: int = 1) -> Resultado:
-        self.preprocessor = DataframePreprocessing(
-            df_treino, df_data_to_predict, col_classe)
-
-        return eval(seed=seed)
+        return Resultado(y_to_predict, final_predictions)
