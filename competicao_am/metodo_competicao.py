@@ -25,18 +25,24 @@ class MetodoCompeticao(MetodoAprendizadoDeMaquina):
 
     # Properties
 
-    #! Might remove
-
     @property
     def df_treino(self):
         return self.preprocessor.df_treino
+
+    @df_treino.setter
+    def df_treino(self, x):
+        self.preprocessor.df_treino = x
 
     @property
     def df_data_to_predict(self):
         return self.preprocessor.df_data_to_predict
 
+    @df_data_to_predict.setter
+    def df_data_to_predict(self, x):
+        self.preprocessor.df_data_to_predict = x
+
     @property
-    def df_data_to_predict(self):
+    def col_classe(self):
         return self.preprocessor.col_classe
 
     @property
@@ -46,8 +52,6 @@ class MetodoCompeticao(MetodoAprendizadoDeMaquina):
     @property
     def y(self):
         return self.preprocessor.y
-
-    #! End
 
     # Combiner
 
@@ -100,9 +104,6 @@ class MetodoCompeticao(MetodoAprendizadoDeMaquina):
         df_treino_bow, df_to_predict_bow = self.preprocessor.bag_of_words(
             column)
 
-        # df_treino_bow, df_to_predict_bow = DataframePreprocessing.remove_id(
-        #     df_treino_bow, df_to_predict_bow)
-
         # ? Should the seed go here?
         self.ml_method.fit(df_treino_bow, y_treino)
         arr_predict = self.ml_method.predict(df_to_predict_bow)
@@ -114,14 +115,72 @@ class MetodoCompeticao(MetodoAprendizadoDeMaquina):
             self.preprocessor = DataframePreprocessing(
                 df_treino, df_data_to_predict, col_classe)
 
-        y_to_predict, predictions_ator = self._eval_boi(
-            ["ator_1", "ator_2", "ator_3", "ator_4", "ator_5"])
-        y_to_predict, predictions_escritor = self._eval_boi(
-            ["escrito_por_1", "escrito_por_2"])  # Novo
-        y_to_predict, predictions_resumo = self._eval_bow("resumo")
-        y_to_predict, predictions_titulo = self._eval_bow("titulo")  # Novo
+        # Dataframes
 
-        final_predictions = self.combine_predictions(
-            predictions_resumo, predictions_titulo, predictions_escritor, predictions_ator)  # Ordem indica prioridade
+        dataframes = self.preprocessor.generate_dataframes()
+
+        y_treino, y_to_predict = self.y
+
+        def fit_and_predict(_x_treino, _x_to_predict):
+            # _x_treino.to_csv('bruh.csv')
+            self.ml_method.fit(_x_treino, y_treino)
+            predicted = self.ml_method.predict(_x_to_predict)
+
+            return predicted
+
+        final_predictions = self.combine_predictions(fit_and_predict(
+            *dataframes['bow_cru']), fit_and_predict(*dataframes['boi_cru']))  # Ordem indica prioridade
+
+        # final_predictions = fit_and_predict(*dataframes['completo'])
 
         return Resultado(y_to_predict, final_predictions)
+
+
+class MetodoCompeticaoValidacao(MetodoCompeticao):
+    def base_eval(self, dfs: List[str], df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None, seed: int = 1):
+        if df_treino is not None and df_data_to_predict is not None and col_classe is not None:
+            self.preprocessor = DataframePreprocessing(
+                df_treino, df_data_to_predict, col_classe)
+
+        # Dataframes
+
+        dataframes = self.preprocessor.generate_dataframes()
+
+        y_treino, y_to_predict = self.y
+
+        def fit_and_predict(_x_treino, _x_to_predict):
+            # _x_treino.to_csv('bruh.csv')
+            self.ml_method.fit(_x_treino, y_treino)
+            predicted = self.ml_method.predict(_x_to_predict)
+
+            return predicted
+
+        predictions = [fit_and_predict(*dataframes[df_name])
+                       for df_name in dfs]
+
+        final_predictions = self.combine_predictions(
+            *predictions)  # Ordem indica prioridade
+
+        # final_predictions = fit_and_predict(*dataframes['completo'])
+
+        return Resultado(y_to_predict, final_predictions)
+
+
+class MetodoCompeticaoValidacao_A(MetodoCompeticaoValidacao):
+    def eval(self, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None, seed: int = 1) -> Resultado:
+        return self.base_eval(['bow_cru', 'boi_cru'], df_treino, df_data_to_predict, col_classe, seed)
+
+
+class MetodoCompeticaoValidacao_B(MetodoCompeticaoValidacao):
+    def eval(self, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None, seed: int = 1) -> Resultado:
+        return self.base_eval(['bow', 'boi'], df_treino, df_data_to_predict, col_classe, seed)
+
+
+class MetodoCompeticaoValidacao_C(MetodoCompeticaoValidacao):
+    def eval(self, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None, seed: int = 1) -> Resultado:
+        return self.base_eval(['completo'], df_treino, df_data_to_predict, col_classe, seed)
+
+
+class MetodoCompeticaoValidacao_D(MetodoCompeticaoValidacao):
+    def eval(self, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None, seed: int = 1) -> Resultado:
+        return self.base_eval(['limpo', 'bow', 'boi'], df_treino, df_data_to_predict, col_classe, seed)
