@@ -139,7 +139,7 @@ class DataframePreprocessing:
 
         # orcamento, popularidade, receita e duracao
         to_scale = ['orcamento', 'popularidade', 'receita', 'duracao']
-        scaler = preprocessing.RobustScaler()
+        scaler = preprocessing.StandardScaler()
 
         scaler.fit(x_treino[to_scale])
         x_treino[to_scale] = scaler.transform(x_treino[to_scale])

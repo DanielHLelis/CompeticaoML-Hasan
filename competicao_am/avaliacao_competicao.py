@@ -28,7 +28,7 @@ class OtimizacaoObjetivoSVMCompeticao(OtimizacaoObjetivo):
 
 
 class OtimizacaoObjetivoSVCRbf(OtimizacaoObjetivo):
-    def __init__(self, fold: Fold, metodo: mc.MetodoCompeticao.__class__):
+    def __init__(self, fold: Fold, metodo: mc.MetodoCompeticao.__class__ = mc.MetodoCompeticao):
         super().__init__(fold)
         self.metodo = metodo
 
@@ -46,18 +46,19 @@ class OtimizacaoObjetivoSVCRbf(OtimizacaoObjetivo):
         return resultado.macro_f1
 
 
-class OtimizacaoObjetivoSVCRbf(OtimizacaoObjetivo):
+class OtimizacaoObjetivoSVCRbfComGamma(OtimizacaoObjetivo):
     def __init__(self, fold: Fold, metodo: mc.MetodoCompeticao.__class__ = mc.MetodoCompeticao):
         super().__init__(fold)
         self.metodo = metodo
 
     def obtem_metodo(self, trial: optuna.Trial):
         exp_cost = trial.suggest_uniform('exp_cost', 0, 7)
+        gamma = trial.suggest_uniform('exp_cost', 0.001, 10)
 
         C = 2 ** exp_cost
 
         scikit_method = svm.SVC(
-            C=C, kernel='rbf', random_state=2)
+            C=C, gamma=gamma, kernel='rbf', random_state=2)
 
         return self.metodo(scikit_method)
 

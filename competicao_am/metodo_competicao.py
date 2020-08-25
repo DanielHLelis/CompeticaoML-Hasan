@@ -183,4 +183,4 @@ class MetodoCompeticaoValidacao_C(MetodoCompeticaoValidacao):
 
 class MetodoCompeticaoValidacao_D(MetodoCompeticaoValidacao):
     def eval(self, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None, seed: int = 1) -> Resultado:
-        return self.base_eval(['limpo', 'bow', 'boi'], df_treino, df_data_to_predict, col_classe, seed)
+        return self.base_eval(['bow', 'limpo', 'boi'], df_treino, df_data_to_predict, col_classe, seed)
