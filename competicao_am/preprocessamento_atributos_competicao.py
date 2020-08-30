@@ -4,6 +4,13 @@ from typing import List, Tuple
 
 from base_am.preprocessamento_atributos import BagOfWords, BagOfItems
 
+import re
+import string
+import numpy as np
+import json
+
+sw_en = json.load(open('datasets/en_sw.json', 'r'))
+
 
 class DataframePreprocessing:
     def __init__(self, df_treino: pd.DataFrame, df_data_to_predict: pd.DataFrame, col_classe: str):
@@ -102,6 +109,30 @@ class DataframePreprocessing:
 
         return training_bow_df, predict_bow_df
 
+    def cleaner(overview: str) -> str:
+        if overview is None or overview is np.nan:
+            return None
+
+        # Separators
+        separators_exp = r'[\-_]'
+        # Other punctuation
+        punctuation_tt = str.maketrans('', '', string.punctuation)
+        # Garbage
+        garbage_exp = r'[^A-z\s]'
+
+        new_overview = overview
+        new_overview = overview.lower()  # Normalize case
+        # Normalize separators
+        new_overview = re.sub(separators_exp, ' ', new_overview)
+        new_overview = new_overview.translate(
+            punctuation_tt)  # Remove punctuation
+        new_overview = re.sub(garbage_exp, '', new_overview)
+
+        new_overview = ' '.join(
+            [w for w in new_overview.split() if len(w) > 0 and w not in sw_en])
+
+        return new_overview if len(new_overview) != 0 else None
+
     def generate_dataframes(self) -> List[Tuple[str, pd.DataFrame, pd.DataFrame]]:
         """
         Cria os pares de dataframes a serem usados
@@ -124,16 +155,13 @@ class DataframePreprocessing:
         - id
         - titulo
         - idioma_original
+        - historia_original
+        - adulto
+        - data_de_estreia
         """
 
-        colunas_a_remover = ['id']
-
-        # Coluna de ano
-        def extrai_ano(df):
-            return pd.to_numeric(df.data_de_estreia.str.extract(r'^(\d{4})-.+$').iloc[:, 0])
-
-        x_treino.ano = extrai_ano(x_treino)
-        x_to_predict.ano = extrai_ano(x_to_predict)
+        colunas_a_remover = ['id', 'titulo',
+                             'idioma_original', 'adulto', 'data_de_estreia']
 
         # Escalamento das colunas
 
@@ -156,6 +184,11 @@ class DataframePreprocessing:
             f'boi_{c}' for c in boi_treino.columns]
         boi_to_predict.columns = [
             f'boi_{c}' for c in boi_to_predict.columns]
+
+        # Limpeza do resumo
+
+        x_treino.resumo = x_treino.resumo.apply(self.cleaner)
+        x_to_predict.resumo = x_to_predict.resumo.apply(self.cleaner)
 
         # Criação da(s) BoW(s)
 
