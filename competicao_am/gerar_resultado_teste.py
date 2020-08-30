@@ -9,8 +9,8 @@ def gerar_saida_teste(df_data_to_predict, col_classe, num_grupo):
     """
 
     # Método usado
-    scikit_method = SVC(kernel='rbf', gamma='scale',
-                        C=48.678472093312394, random_state=2)
+    scikit_method = SVC(kernel='rbf', gamma=0.10044264686563253,
+                        C=2 ** 2.8396028413359202, random_state=2)
 
     # DataFrame de treino
     df_treino = pd.read_csv("datasets/movies_amostra.csv")
