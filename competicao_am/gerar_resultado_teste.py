@@ -1,5 +1,7 @@
-from competicao_am.metodo_competicao import MetodoCompeticao
+from competicao_am.metodo_competicao import MetodoCompeticaoFinal
+from competicao_am.preprocessamento_atributos_competicao import DataframePreprocessing
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 
 
@@ -8,16 +10,25 @@ def gerar_saida_teste(df_data_to_predict, col_classe, num_grupo):
     Treina o modelo com os dados de treino fornecidos e computa a saída de teste por meio do modelo criado 
     """
 
-    # Método usado
-    scikit_method = SVC(kernel='rbf', gamma=0.10044264686563253,
-                        C=2 ** 2.8396028413359202, random_state=2)
+    # Params
+    exp_cost = 1.8103213437733223
+    gamma = 0.29314287596361527
+    min_samples = 0.04411375470350195
+    max_features = 0.30427723689993286
+    num_arvores = 1
+
+    # Métodos usado
+    svm_method = SVC(C=2**exp_cost, gamma=gamma, kernel='rbf', random_state=2)
+    rf_method = RandomForestClassifier(
+        min_samples_split=min_samples, max_features=max_features, n_estimators=num_arvores, random_state=2)
 
     # DataFrame de treino
     df_treino = pd.read_csv("datasets/movies_amostra.csv")
 
+    dfp = DataframePreprocessing(df_treino, df_data_to_predict, col_classe)
+
     # Instanciação do método
-    ml_method = MetodoCompeticao(
-        scikit_method, df_treino=df_treino, df_data_to_predict=df_data_to_predict, col_classe=col_classe)
+    ml_method = MetodoCompeticaoFinal(svm_method, rf_method, dfp)
 
     # Treinamento e geração dos resultados
     resultado = ml_method.eval()

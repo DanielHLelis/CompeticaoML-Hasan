@@ -102,6 +102,9 @@ class DataframePreprocessing:
 
         x_treino, x_to_predict = self.x
 
+        x_treino.resumo = x_treino.resumo.apply(self.cleaner)
+        x_to_predict.resumo = x_to_predict.resumo.apply(self.cleaner)
+
         bow = BagOfWords()
 
         training_bow_df = bow.cria_bow(x_treino, column)
@@ -109,6 +112,7 @@ class DataframePreprocessing:
 
         return training_bow_df, predict_bow_df
 
+    @staticmethod
     def cleaner(overview: str) -> str:
         if overview is None or overview is np.nan:
             return None
@@ -117,8 +121,13 @@ class DataframePreprocessing:
         separators_exp = r'[\-_]'
         # Other punctuation
         punctuation_tt = str.maketrans('', '', string.punctuation)
-        # Garbage
-        garbage_exp = r'[^A-z\s]'
+        # Word validator
+
+        def only_letter(s):
+            for w in s:
+                if w not in 'abcdefghijklmnopqrstuvwxyz':
+                    return False
+            return True
 
         new_overview = overview
         new_overview = overview.lower()  # Normalize case
@@ -126,39 +135,30 @@ class DataframePreprocessing:
         new_overview = re.sub(separators_exp, ' ', new_overview)
         new_overview = new_overview.translate(
             punctuation_tt)  # Remove punctuation
-        new_overview = re.sub(garbage_exp, '', new_overview)
 
-        new_overview = ' '.join(
-            [w for w in new_overview.split() if len(w) > 0 and w not in sw_en])
+        new_overview = ' '.join([w for w in new_overview.split() if len(
+            w) > 0 and only_letter(w) and w not in sw_en])
 
         return new_overview if len(new_overview) != 0 else None
 
-    def generate_dataframes(self) -> List[Tuple[str, pd.DataFrame, pd.DataFrame]]:
-        """
-        Cria os pares de dataframes a serem usados
-        """
-
-        """
-        Possíveis DF's
-        - limpo, sem nenhuma coluna que será transformada em BoW ou BoI
-        - BoI, combinação das BoI
-        - BoW, combinação das BoW
-        - BoI Parametrizado, BoI e atributos padrões
-        - BoW Parametrizado, BoW e atributos padrões
-        - completo, todas as colunas (pode ser muito lento)
-        """
+    def df_resumo(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
         x_treino, x_to_predict = self.x
 
-        """
-        Colunas não usadas:
-        - id
-        - titulo
-        - idioma_original
-        - historia_original
-        - adulto
-        - data_de_estreia
-        """
+        # Criação da(s) BoW(s)
+
+        bow = ['resumo']  # A relevância do título é questionável
+
+        bow_resumo_treino, bow_resumo_to_predict = self.bag_of_words('resumo')
+        bow_resumo_treino.columns = [
+            f'resumo_{c}' for c in bow_resumo_treino.columns]
+        bow_resumo_to_predict.columns = [
+            f'resumo_{c}' for c in bow_resumo_to_predict.columns]
+
+        return bow_resumo_treino, bow_resumo_to_predict
+
+    def df_stats(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        x_treino, x_to_predict = self.x
 
         colunas_a_remover = ['id', 'titulo',
                              'idioma_original', 'adulto', 'data_de_estreia']
@@ -173,63 +173,10 @@ class DataframePreprocessing:
         x_treino[to_scale] = scaler.transform(x_treino[to_scale])
         x_to_predict[to_scale] = scaler.transform(x_to_predict[to_scale])
 
-        # Criação da(s) BoI(s)
-
-        items = ['ator_1', 'ator_2', 'ator_3', 'ator_4', 'ator_5',
-                 'dirigido_por', 'escrito_por_1', 'escrito_por_2']
-
-        boi_treino, boi_to_predict = self.bag_of_items(items)
-        boi_treino, boi_to_predict = self.remove_id(boi_treino, boi_to_predict)
-        boi_treino.columns = [
-            f'boi_{c}' for c in boi_treino.columns]
-        boi_to_predict.columns = [
-            f'boi_{c}' for c in boi_to_predict.columns]
-
-        # Limpeza do resumo
-
-        x_treino.resumo = x_treino.resumo.apply(self.cleaner)
-        x_to_predict.resumo = x_to_predict.resumo.apply(self.cleaner)
-
-        # Criação da(s) BoW(s)
-
-        bow = ['resumo']  # A relevância do título é questionável
-
-        bow_resumo_treino, bow_resumo_to_predict = self.bag_of_words('resumo')
-        bow_resumo_treino.columns = [
-            f'resumo_{c}' for c in bow_resumo_treino.columns]
-        bow_resumo_to_predict.columns = [
-            f'resumo_{c}' for c in bow_resumo_to_predict.columns]
-
-        # Criação dos dataframes
-
         def clean(df):
             return df.drop(columns=colunas_a_remover).select_dtypes(exclude=['object']).fillna(0)
 
         df_limpo_treino = clean(x_treino)
         df_limpo_to_predict = clean(x_to_predict)
 
-        def c_concat(dfs):
-            return pd.concat([df.reset_index() for df in dfs], axis=1)
-
-        df_boi_treino = c_concat([df_limpo_treino, boi_treino])
-        df_boi_to_predict = c_concat([df_limpo_to_predict, boi_to_predict])
-
-        df_bow_treino = c_concat([df_limpo_treino, bow_resumo_treino])
-        df_bow_to_predict = c_concat(
-            [df_limpo_to_predict, bow_resumo_to_predict])
-
-        df_completo_treino = c_concat(
-            [df_limpo_treino, boi_treino, bow_resumo_treino])
-        df_completo_to_predict = c_concat(
-            [df_limpo_to_predict, boi_to_predict, bow_resumo_to_predict])
-
-        dataframes = {
-            'limpo': (df_limpo_treino, df_limpo_to_predict),
-            'boi': (df_boi_treino, df_boi_to_predict),
-            'bow': (df_bow_treino, df_bow_to_predict),
-            'boi_cru': (boi_treino, boi_to_predict),
-            'bow_cru': (bow_resumo_treino, bow_resumo_to_predict),
-            'completo': (df_completo_treino, df_completo_to_predict),
-        }
-
-        return dataframes
+        return df_limpo_treino, df_limpo_to_predict

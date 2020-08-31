@@ -53,7 +53,7 @@ class OtimizacaoObjetivoSVCRbfComGamma(OtimizacaoObjetivo):
 
     def obtem_metodo(self, trial: optuna.Trial):
         exp_cost = trial.suggest_uniform('exp_cost', 0, 7)
-        gamma = trial.suggest_uniform('gamma', 0.001, 10)
+        gamma = trial.suggest_uniform('gamma', 0.0001, 1)
 
         C = 2 ** exp_cost
 
