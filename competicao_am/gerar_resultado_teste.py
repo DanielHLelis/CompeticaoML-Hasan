@@ -13,8 +13,8 @@ def gerar_saida_teste(df_data_to_predict, col_classe, num_grupo):
     # Params
     exp_cost = 1.8103213437733223
     gamma = 0.29314287596361527
-    min_samples = 0.04411375470350195
-    max_features = 0.30427723689993286
+    min_samples = 0.04466339369901853
+    max_features = 0.0010292429905777445
     num_arvores = 1
 
     # Métodos usado
