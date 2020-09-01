@@ -105,6 +105,31 @@ class MetodoCompeticaoValidacaoRF(MetodoCompeticao):
         return Resultado(y_to_predict, predicted)
 
 
+class MetodoCompeticaoValidacaoComedy(MetodoCompeticao):
+    def __init__(self, ml_method: Union[ClassifierMixin, RegressorMixin], preprocessor: DataframePreprocessing = None, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None):
+        self.ml_method = ml_method
+        self.preprocessor = preprocessor
+
+        if df_treino is not None and df_data_to_predict is not None and col_classe is not None and preprocessor is None:
+            self.preprocessor = DataframePreprocessing(
+                df_treino, df_data_to_predict, col_classe)
+
+    def eval(self, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None, seed: int = 1) -> Resultado:
+        if df_treino is not None and df_data_to_predict is not None and col_classe is not None:
+            self.preprocessor = DataframePreprocessing(
+                df_treino, df_data_to_predict, col_classe)
+
+        # Dataframes
+
+        x_treino, x_to_predict = self.preprocessor.df_stats()
+        y_treino, y_to_predict = self.y
+
+        predicted = [self.preprocessor.int_classe(
+            'Comedy')] * len(x_to_predict)
+
+        return Resultado(y_to_predict, predicted)
+
+
 class MetodoCompeticaoFinal(MetodoCompeticao):
     def __init__(self, svm_method: Union[ClassifierMixin, RegressorMixin], rf_method: Union[ClassifierMixin, RegressorMixin], preprocessor: DataframePreprocessing = None):
         self.svm_method = svm_method
@@ -114,7 +139,7 @@ class MetodoCompeticaoFinal(MetodoCompeticao):
     def rf_indexes(self) -> List[int]:
         _, x_predict = self.x
         x_predict = x_predict.reset_index()
-        return x_predict[preprocessor.cleaner(x_predict.resumo).isna()].index.values
+        return x_predict[x_predict.resumo.apply(self.preprocessor.cleaner).isna()].index.values
 
     def eval(self, seed: int = 1) -> Resultado:
         # Dataframes
@@ -123,11 +148,11 @@ class MetodoCompeticaoFinal(MetodoCompeticao):
 
         y_treino, y_to_predict = self.y
 
-        self.svm_method.fit(x_treino_svm, y_treino_svm)
-        predicted_svm = self.svm_method.predict(x_to_predict)
+        self.svm_method.fit(x_treino_svm, y_treino)
+        predicted_svm = self.svm_method.predict(x_to_predict_svm)
 
-        self.rf_method.fit(x_treino_rf, y_treino_rf)
-        predicted_rf = self.rf_method.predict(x_to_predict)
+        self.rf_method.fit(x_treino_rf, y_treino)
+        predicted_rf = self.rf_method.predict(x_to_predict_rf)
 
         rf_index = self.rf_indexes()
 
