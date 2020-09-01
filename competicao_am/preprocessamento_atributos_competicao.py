@@ -9,10 +9,14 @@ import string
 import numpy as np
 import json
 
-sw_en = json.load(open('datasets/en_sw.json', 'r'))
+sw_en = json.load(open('datasets/en_sw.json', 'r'))  # Stop-words
 
 
 class DataframePreprocessing:
+    """
+    Gerenciamento e transformações no DF
+    """
+
     def __init__(self, df_treino: pd.DataFrame, df_data_to_predict: pd.DataFrame, col_classe: str):
         # Attributes
         self.df_treino = df_treino.copy()
@@ -114,6 +118,9 @@ class DataframePreprocessing:
 
     @staticmethod
     def cleaner(overview: str) -> str:
+        """
+        Realiza limpeza em uma string
+        """
         if overview is None or overview is np.nan:
             return None
 

@@ -16,13 +16,11 @@ from IPython.display import display
 
 
 class MetodoCompeticao(MetodoAprendizadoDeMaquina, metaclass=ABCMeta):
-    # def __init__(self, ml_method: Union[ClassifierMixin, RegressorMixin], preprocessor: DataframePreprocessing = None, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None):
-    #     self.ml_method = ml_method
-    #     self.preprocessor = preprocessor
+    """
+    Classe abstrata dos metodos com algumas propriedades pré-definidas
+    """
 
-    #     if df_treino is not None and df_data_to_predict is not None and col_classe is not None and preprocessor is None:
-    #         self.preprocessor = DataframePreprocessing(
-    #             df_treino, df_data_to_predict, col_classe)
+    preprocessor: DataframePreprocessing
 
     @property
     def df_treino(self):
@@ -52,8 +50,14 @@ class MetodoCompeticao(MetodoAprendizadoDeMaquina, metaclass=ABCMeta):
     def y(self):
         return self.preprocessor.y
 
+# Poderia renomear, mas preguiça
+
 
 class MetodoCompeticaoValidacaoSVM(MetodoCompeticao):
+    """
+    Metodo que usa o resumo do filme como uma BoW, indicado a ser usado com SVM's
+    """
+
     def __init__(self, ml_method: Union[ClassifierMixin, RegressorMixin], preprocessor: DataframePreprocessing = None, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None):
         self.ml_method = ml_method
         self.preprocessor = preprocessor
@@ -80,6 +84,10 @@ class MetodoCompeticaoValidacaoSVM(MetodoCompeticao):
 
 
 class MetodoCompeticaoValidacaoRF(MetodoCompeticao):
+    """
+    Metodo que usa as estatísticas do filme, funciona bem com RandomForest
+    """
+
     def __init__(self, ml_method: Union[ClassifierMixin, RegressorMixin], preprocessor: DataframePreprocessing = None, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None):
         self.ml_method = ml_method
         self.preprocessor = preprocessor
@@ -106,6 +114,10 @@ class MetodoCompeticaoValidacaoRF(MetodoCompeticao):
 
 
 class MetodoCompeticaoValidacaoComedy(MetodoCompeticao):
+    """
+    Metodo que sempre retorna Comedy 
+    """
+
     def __init__(self, ml_method: Union[ClassifierMixin, RegressorMixin], preprocessor: DataframePreprocessing = None, df_treino: pd.DataFrame = None, df_data_to_predict: pd.DataFrame = None, col_classe: str = None):
         self.ml_method = ml_method
         self.preprocessor = preprocessor
@@ -131,6 +143,10 @@ class MetodoCompeticaoValidacaoComedy(MetodoCompeticao):
 
 
 class MetodoCompeticaoFinal(MetodoCompeticao):
+    """
+    Método usado para prever as classes, utiliza uma SVM na BoW do resumo, caso não haja resumo, utiliza-se uma RF nas estatísticas do filme
+    """
+
     def __init__(self, svm_method: Union[ClassifierMixin, RegressorMixin], rf_method: Union[ClassifierMixin, RegressorMixin], preprocessor: DataframePreprocessing = None):
         self.svm_method = svm_method
         self.rf_method = rf_method

@@ -4,7 +4,7 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 
-# Params
+# Parametros dos modelos
 EXP_COST = 1.8103213437733223
 GAMMA = 0.29314287596361527
 MIN_SAMPLES_SPLIT = 0.04466339369901853
